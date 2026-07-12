@@ -12,7 +12,10 @@ class ProductController:
         pass
 
     async def show(self, product_id: int) -> ProductOut:
-        pass
+        product = await self.service.get_by_id(product_id)
+        if product is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+        return ProductOut.model_validate(product)
 
     async def low_stock(self) -> list[ProductOut]:
         pass
