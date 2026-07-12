@@ -38,4 +38,4 @@ async def simulate_sale(
     qty: int = Query(1, ge=1),
     c: ProductController = Depends(controller),
 ):
-    pass
+    return await c.simulate_sale(product_id, qty)
