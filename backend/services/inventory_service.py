@@ -13,7 +13,8 @@ class InventoryService:
         pass
 
     async def get_by_id(self, product_id: int) -> Product | None:
-        pass
+        result = await self.db.execute(select(Product).where(Product.id == product_id))
+        return result.scalar_one_or_none()
 
     async def get_low_stock(self) -> list[Product]:
         pass

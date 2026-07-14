@@ -29,7 +29,7 @@ async def get_summary(c: ProductController = Depends(controller)):
 
 @router.get("/{product_id}")
 async def get_product(product_id: int, c: ProductController = Depends(controller)):
-    pass
+    return await c.show(product_id)
 
 
 @router.post("/{product_id}/simulate-sale")
