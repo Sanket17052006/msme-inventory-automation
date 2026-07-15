@@ -16,43 +16,36 @@ MSMEs waste 15–20 hours per week on manual inventory tracking. This project au
 
 ---
 
-## Current State (Phase 1 — Foundation)
+## Current State
 
-The backend infrastructure is fully set up and running:
-
-- **FastAPI** application with async SQLAlchemy + PostgreSQL
-- **4 database models**: `products`, `orders`, `suppliers`, `sales_log`
-- **Pydantic schemas** for all request/response validation
-- **Clean layered architecture**: routes → controllers → services
-- **Docker Compose** with PostgreSQL service
-- `GET /health` endpoint returning `{"status": "ok"}`
-
-Verified working with PostgreSQL running locally and FastAPI serving on port 8000.
+- **Phase 1 (Foundation)** — ✅ Complete (FastAPI, PostgreSQL, Docker, models, schemas)
+- **Phase 2 (Core API)** — 🟡 In progress ([tracked via epic #1](https://github.com/Sanket17052006/msme-inventory-automation/issues/1))
 
 ---
 
 ## Phase 2 — Core API Implementation
 
-The 13 REST API endpoints need to be implemented across routes, controllers, and services to power the full inventory workflow:
+13 REST API endpoints powering the full inventory workflow. Status tracked in [epic #1](https://github.com/Sanket17052006/msme-inventory-automation/issues/1):
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `GET` | `/products` | List all products with stock levels |
-| `GET` | `/products/{id}` | Single product details |
-| `GET` | `/products/low-stock` | Products where stock < reorder_point |
-| `POST` | `/products/{id}/simulate-sale` | Reduce stock by qty (demo trigger) |
-| `GET` | `/orders` | List orders (filterable by status) |
-| `GET` | `/orders/{id}` | Single order details |
-| `POST` | `/orders` | Create a new order manually |
-| `PATCH` | `/orders/{id}/status` | Confirm, reject, or fulfill an order |
-| `GET` | `/suppliers` | List all suppliers |
-| `GET` | `/suppliers/{id}` | Single supplier details |
-| `GET` | `/sales-log` | Sales history for charts |
-| `GET` | `/analytics/summary` | Dashboard summary counts |
-| `GET` | `/health` | Health check |
+| Method | Endpoint | Purpose | Status |
+|---|---|---|---|
+| `GET` | `/health` | Health check | ✅ Done |
+| `GET` | `/products` | List all products with stock levels | 🔲 Pending |
+| `GET` | `/products/{id}` | Single product details | ✅ Done |
+| `GET` | `/products/low-stock` | Products where stock < reorder_point | 🔲 Pending |
+| `GET` | `/products/summary` | Dashboard summary counts | 🔲 Pending |
+| `POST` | `/products/{id}/simulate-sale` | Reduce stock by qty (demo trigger) | ✅ Done |
+| `GET` | `/orders` | List orders (filterable by status) | 🔲 Pending |
+| `GET` | `/orders/{id}` | Single order details | 🔲 Pending |
+| `POST` | `/orders` | Create a new order manually | 🔲 Pending |
+| `PATCH` | `/orders/{id}/status` | Confirm, reject, or fulfill an order | 🔲 Pending |
+| `GET` | `/suppliers` | List all suppliers | 🔲 Pending |
+| `GET` | `/suppliers/{id}` | Single supplier details | 🔲 Pending |
+| `GET` | `/sales-log` | Sales history for charts | 🔲 Pending |
+| `GET` | `/analytics/summary` | Dashboard summary counts | 🔲 Pending |
 
 **Success criteria for Phase 2:**
-- All 13 endpoints return correct data from PostgreSQL
+- All 14 endpoints return correct data from PostgreSQL
 - `POST /products/{id}/simulate-sale` reduces stock and logs the sale
 - `PATCH /orders/{id}/status` updates order state
 - All endpoints testable via Swagger UI at `/docs` or Postman
