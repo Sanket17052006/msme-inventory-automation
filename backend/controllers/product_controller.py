@@ -17,6 +17,12 @@ class ProductController:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
         return ProductOut.model_validate(product)
 
+    async def showAll(self) -> list[ProductOut]:
+        productList = await self.service.get_all()
+        if not productList:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No Product found")
+        return [ProductOut.model_validate(i) for i in productList]
+
     async def low_stock(self) -> list[ProductOut]:
         pass
 
