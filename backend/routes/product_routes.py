@@ -14,7 +14,7 @@ def controller(db: AsyncSession = Depends(get_db)) -> ProductController:
 
 @router.get("")
 async def list_products(c: ProductController = Depends(controller)):
-    pass
+    return await c.showAll()
 
 
 @router.get("/low-stock")

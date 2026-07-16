@@ -10,7 +10,8 @@ class InventoryService:
         self.db = db
 
     async def get_all(self) -> list[Product]:
-        pass
+        result = await self.db.execute(select(Product))
+        return result.scalars().all()
 
     async def get_by_id(self, product_id: int) -> Product | None:
         result = await self.db.execute(select(Product).where(Product.id == product_id))
