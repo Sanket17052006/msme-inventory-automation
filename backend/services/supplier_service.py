@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.supplier import Supplier
@@ -8,7 +9,9 @@ class SupplierService:
         self.db = db
 
     async def get_all(self) -> list[Supplier]:
-        pass
+        result = await self.db.execute(select(Supplier))
+        return result.scalars().all()
 
     async def get_by_id(self, supplier_id: int) -> Supplier | None:
-        pass
+        result = await self.db.execute(select(Supplier).where(Supplier.id == supplier_id))
+        return result.scalar_one_or_none()
