@@ -8,9 +8,6 @@ class ProductController:
     def __init__(self, service: InventoryService):
         self.service = service
 
-    async def index(self) -> list[ProductOut]:
-        pass
-
     async def show(self, product_id: int) -> ProductOut:
         product = await self.service.get_by_id(product_id)
         if product is None:
@@ -24,7 +21,10 @@ class ProductController:
         return [ProductOut.model_validate(i) for i in productList]
 
     async def low_stock(self) -> list[ProductOut]:
-        pass
+        products = await self.service.get_low_stock()
+        if not products:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No low stock products found")
+        return [ProductOut.model_validate(p) for p in products]
 
     async def simulate_sale(self, product_id: int, qty: int = 1) -> ProductOut:
         try:
@@ -36,4 +36,4 @@ class ProductController:
         return ProductOut.model_validate(product)
 
     async def summary(self) -> dict:
-        pass
+        return await self.service.get_summary()

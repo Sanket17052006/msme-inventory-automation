@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.product import Product
@@ -18,7 +18,10 @@ class InventoryService:
         return result.scalar_one_or_none()
 
     async def get_low_stock(self) -> list[Product]:
-        pass
+        result = await self.db.execute(
+            select(Product).where(Product.stock < Product.reorder_point)
+        )
+        return result.scalars().all()
 
     async def reduce_stock(self, product_id: int, qty: int = 1) -> Product | None:
         result = await self.db.execute(select(Product).where(Product.id == product_id).with_for_update())
@@ -35,4 +38,13 @@ class InventoryService:
         return product
 
     async def get_summary(self) -> dict:
-        pass
+        total_products = await self.db.execute(select(func.count(Product.id)))
+        low_stock_count = await self.db.execute(
+            select(func.count(Product.id)).where(Product.stock < Product.reorder_point)
+        )
+        total_stock = await self.db.execute(select(func.coalesce(func.sum(Product.stock), 0)))
+        return {
+            "total_products": total_products.scalar(),
+            "low_stock_count": low_stock_count.scalar(),
+            "total_stock": total_stock.scalar(),
+        }

@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.controllers.product_controller import ProductController
 from backend.database import get_db
+from backend.schemas.product import ProductOut
 from backend.services.inventory_service import InventoryService
 
 router = APIRouter()
@@ -17,14 +18,14 @@ async def list_products(c: ProductController = Depends(controller)):
     return await c.showAll()
 
 
-@router.get("/low-stock")
+@router.get("/low-stock", response_model=list[ProductOut])
 async def list_low_stock(c: ProductController = Depends(controller)):
-    pass
+    return await c.low_stock()
 
 
 @router.get("/summary")
 async def get_summary(c: ProductController = Depends(controller)):
-    pass
+    return await c.summary()
 
 
 @router.get("/{product_id}")
