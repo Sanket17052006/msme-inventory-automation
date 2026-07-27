@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class OrderOut(BaseModel):
@@ -16,7 +16,7 @@ class OrderOut(BaseModel):
 
 class OrderCreate(BaseModel):
     product_id: int
-    qty: int
+    qty: int = Field(ge=1)
     supplier_id: int | None = None
 
 
