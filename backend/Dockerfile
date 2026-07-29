@@ -3,9 +3,9 @@ FROM python:3.12-slim
 RUN groupadd -r app && useradd -r -g app app
 
 WORKDIR /app
-COPY requirements.txt backend/
+COPY backend/requirements.txt backend/
 RUN pip install --no-cache-dir -r backend/requirements.txt
-COPY . backend/
+COPY . .
 
 USER app
 
