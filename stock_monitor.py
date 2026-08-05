@@ -4,6 +4,7 @@ import time
 
 from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from backend.database import async_session
 from backend.models.product import Product
@@ -34,9 +35,9 @@ async def check_and_alert():
 
     async with async_session() as db:
         result = await db.execute(
-            select(Product).where(
-                Product.stock < Product.reorder_point, ~has_pending_order
-            )
+            select(Product)
+            .options(selectinload(Product.supplier))
+            .where(Product.stock < Product.reorder_point, ~has_pending_order)
         )
         low_stock = list(result.scalars().all())
 
