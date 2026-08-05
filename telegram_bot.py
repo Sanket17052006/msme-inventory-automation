@@ -59,12 +59,20 @@ async def handle_callback(update, context):
             return
 
         if action == "confirm":
+            if order.status != "pending":
+                await query.answer(f"Order already {order.status}.")
+                return
             order.status = "confirmed"
             await db.commit()
-            await query.edit_message_text(f"Order #{order_id} confirmed!")
+            await query.edit_message_text(
+                f"Order #{order_id} confirmed!", reply_markup=None
+            )
         elif action == "reject":
+            if order.status != "pending":
+                await query.answer(f"Order already {order.status}.")
+                return
             message = await try_next_supplier(db, order)
-            await query.edit_message_text(message)
+            await query.edit_message_text(message, reply_markup=None)
 
 
 def get_application() -> Application:
