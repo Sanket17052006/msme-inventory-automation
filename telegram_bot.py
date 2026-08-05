@@ -7,6 +7,8 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler
 from backend.config import settings
 from backend.database import async_session
 from backend.models.order import Order
+from backend.models.product import Product
+from backend.services.supplier_service import SupplierService
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,6 +30,30 @@ async def send_alert(order_id: int, product_name: str, qty: int, supplier_name: 
     return text
 
 
+async def try_next_supplier(db, order: Order) -> str:
+    fallback = await SupplierService(db).find_fallback(order.supplier_id)
+    if fallback is None:
+        return f"Order #{order.id} rejected. No fallback supplier available."
+    product = await db.get(Product, order.product_id)
+    order.supplier_id = fallback.id
+    order.status = "pending"
+    await db.commit()
+    await db.refresh(order)
+    sent = await send_alert(
+        order.id,
+        product.name if product else "?",
+        order.qty,
+        fallback.name,
+        chat_id=fallback.telegram_id,
+    )
+    if sent:
+        return (
+            f"Order #{order.id}: original supplier rejected — "
+            f"alerted {fallback.name} instead."
+        )
+    return f"Order #{order.id}: original supplier rejected — {fallback.name} is next."
+
+
 async def handle_callback(update, context):
     query = update.callback_query
     await query.answer()
@@ -42,11 +68,11 @@ async def handle_callback(update, context):
 
         if action == "confirm":
             order.status = "confirmed"
+            await db.commit()
             await query.edit_message_text(f"Order #{order_id} confirmed!")
         elif action == "reject":
-            order.status = "rejected"
-            await query.edit_message_text(f"Order #{order_id} rejected.")
-        await db.commit()
+            message = await try_next_supplier(db, order)
+            await query.edit_message_text(message)
 
 
 async def main():
