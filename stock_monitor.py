@@ -1,13 +1,14 @@
 import asyncio
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import async_session
 from backend.models.product import Product
 from backend.models.order import Order
 
+import telegram_bot
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,9 +21,17 @@ def calc_order_qty(product: Product) -> int:
 
 
 async def check_and_alert():
+    has_pending_order = exists(
+        select(Order.id).where(
+            Order.product_id == Product.id, Order.status == "pending"
+        )
+    )
+
     async with async_session() as db:
         result = await db.execute(
-            select(Product).where(Product.stock < Product.reorder_point)
+            select(Product).where(
+                Product.stock < Product.reorder_point, ~has_pending_order
+            )
         )
         low_stock = list(result.scalars().all())
 
@@ -39,6 +48,18 @@ async def check_and_alert():
                 status="pending",
             )
             db.add(order)
+            await db.flush()
+
+            supplier = product.supplier
+            supplier_name = supplier.name if supplier else "unknown supplier"
+            await telegram_bot.send_alert(
+                order.id,
+                product.name,
+                qty,
+                supplier_name,
+                chat_id=supplier.telegram_id if supplier else None,
+            )
+
         await db.commit()
 
         if low_stock:
