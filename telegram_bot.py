@@ -110,15 +110,15 @@ async def send_alert(
     return True
 
 
-async def main():
+def main():
     if not settings.telegram_token:
         logger.warning("TELEGRAM_TOKEN not set. Bot not started.")
         return
 
     app = get_application()
     logger.info("Telegram bot started")
-    await app.run_polling()
+    app.run_polling()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
