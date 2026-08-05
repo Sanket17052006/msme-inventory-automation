@@ -15,19 +15,11 @@ logger = logging.getLogger(__name__)
 
 PENDING_ALERTS: dict[str, int] = {}
 
+_application: Application | None = None
 
-async def send_alert(order_id: int, product_name: str, qty: int, supplier_name: str) -> str:
-    chat_id = "YOUR_CHAT_ID"
-    text = f"Order {qty} {product_name} from {supplier_name}?"
-    keyboard = [
-        [
-            InlineKeyboardButton("✅ CONFIRM", callback_data=f"confirm_{order_id}"),
-            InlineKeyboardButton("❌ REJECT", callback_data=f"reject_{order_id}"),
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    logger.info(f"Would send: {text}")
-    return text
+
+async def handle_start(update, context):
+    await update.message.reply_text("MSME stock alert bot ready. Alerts will arrive here.")
 
 
 async def try_next_supplier(db, order: Order) -> str:
@@ -75,13 +67,55 @@ async def handle_callback(update, context):
             await query.edit_message_text(message)
 
 
+def get_application() -> Application:
+    global _application
+    if _application is None:
+        _application = Application.builder().token(settings.telegram_token).build()
+        _application.add_handler(CommandHandler("start", handle_start))
+        _application.add_handler(CallbackQueryHandler(handle_callback))
+    return _application
+
+
+async def send_alert(
+    order_id: int,
+    product_name: str,
+    qty: int,
+    supplier_name: str,
+    chat_id: str | None = None,
+) -> bool:
+    target = chat_id or settings.telegram_chat_id
+    if not target:
+        logger.warning(
+            f"Order #{order_id}: no chat_id configured (supplier telegram_id or "
+            "TELEGRAM_CHAT_ID) — alert not sent"
+        )
+        return False
+
+    text = f"Order {qty} {product_name} from {supplier_name}?"
+    keyboard = [
+        [
+            InlineKeyboardButton("✅ CONFIRM", callback_data=f"confirm_{order_id}"),
+            InlineKeyboardButton("❌ REJECT", callback_data=f"reject_{order_id}"),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    if not settings.telegram_token:
+        logger.info(f"[dry-run] Would send to {target}: {text}")
+        return False
+
+    app = get_application()
+    await app.bot.send_message(chat_id=target, text=text, reply_markup=reply_markup)
+    logger.info(f"Alert sent for order #{order_id} to {target}")
+    return True
+
+
 async def main():
     if not settings.telegram_token:
         logger.warning("TELEGRAM_TOKEN not set. Bot not started.")
         return
 
-    app = Application.builder().token(settings.telegram_token).build()
-    app.add_handler(CallbackQueryHandler(handle_callback))
+    app = get_application()
     logger.info("Telegram bot started")
     await app.run_polling()
 
