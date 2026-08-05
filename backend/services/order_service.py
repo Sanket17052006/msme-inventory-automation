@@ -53,6 +53,16 @@ class OrderService:
                 f"Invalid transition: {order.status} -> {new_status}. Allowed: {allowed}"
             )
         order.status = new_status
+        if new_status == "fulfilled":
+            product_result = await self.db.execute(
+                select(Product)
+                .where(Product.id == order.product_id)
+                .with_for_update()
+            )
+            product = product_result.scalar_one_or_none()
+            if product is None:
+                raise ValueError(f"Product with id {order.product_id} not found")
+            product.stock = product.stock + order.qty
         await self.db.commit()
         await self.db.refresh(order)
         return order
