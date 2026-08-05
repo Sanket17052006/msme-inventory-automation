@@ -115,6 +115,7 @@ def main():
         logger.warning("TELEGRAM_TOKEN not set. Bot not started.")
         return
 
+    asyncio.set_event_loop(asyncio.new_event_loop())
     app = get_application()
     logger.info("Telegram bot started")
     app.run_polling()
