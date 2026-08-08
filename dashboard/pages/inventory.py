@@ -1,3 +1,8 @@
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import streamlit as st
 import pandas as pd
 from api import get, post
@@ -26,7 +31,7 @@ df["status"] = df.apply(lambda r: stock_color(r["stock"], r["reorder_point"]), a
 with tab1:
     col_order = ["id", "name", "sku", "stock", "reorder_point", "avg_daily_sales", "price", "status"]
     display = df[[c for c in col_order if c in df.columns]]
-    st.dataframe(display, use_container_width=True, hide_index=True)
+    st.dataframe(display, width="stretch", hide_index=True)
 
     st.subheader("Simulate Sale")
     col1, col2 = st.columns([3, 1])
@@ -48,4 +53,4 @@ with tab2:
         st.success("No low stock products!")
     else:
         low_display = low[[c for c in col_order if c in df.columns]]
-        st.dataframe(low_display, use_container_width=True, hide_index=True)
+        st.dataframe(low_display, width="stretch", hide_index=True)

@@ -1,3 +1,8 @@
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -28,10 +33,10 @@ if sales:
 
     fig = px.line(df, x="sale_date", y="qty_sold", color="product_name",
                   title="Daily Sales by Product")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     with st.expander("Raw Sales Log"):
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(df, width="stretch", hide_index=True)
 else:
     st.info("No sales data. Use 'Simulate Sale' on the Inventory page to generate sales.")
 
@@ -39,7 +44,7 @@ st.subheader("Suppliers")
 suppliers = get("/suppliers")
 if suppliers:
     sdf = pd.DataFrame(suppliers)
-    st.dataframe(sdf, use_container_width=True, hide_index=True)
+    st.dataframe(sdf, width="stretch", hide_index=True)
 else:
     st.info("No suppliers found.")
 
@@ -51,4 +56,4 @@ if products:
         pdf["stock_value"] = pdf["price"] * pdf["stock"]
         pdf = pdf.sort_values("stock_value", ascending=False)
         fig2 = px.bar(pdf, x="name", y="stock_value", title="Stock Value by Product (₹)")
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")

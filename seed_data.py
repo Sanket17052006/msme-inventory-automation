@@ -3,10 +3,16 @@ import os
 import random
 from datetime import date, timedelta
 
+from dotenv import load_dotenv
+from sqlalchemy import text
+
+load_dotenv()
+
 from backend.database import async_session, init_db
+from backend.models.order import Order
 from backend.models.product import Product
-from backend.models.supplier import Supplier
 from backend.models.sales_log import SalesLog
+from backend.models.supplier import Supplier
 
 PRODUCTS = [
     {"name": "Steel Rod", "sku": "SR-001", "reorder_point": 5, "avg_daily_sales": 8, "price": 300},
@@ -33,6 +39,10 @@ SUPPLIERS = [
 async def seed():
     await init_db()
     async with async_session() as db:
+        await db.execute(
+            text("TRUNCATE sales_log, orders, products, suppliers RESTART IDENTITY")
+        )
+
         suppliers = []
         for s in SUPPLIERS:
             supplier = Supplier(**s)

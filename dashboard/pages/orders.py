@@ -1,3 +1,8 @@
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import streamlit as st
 import pandas as pd
 from api import get, post, patch
@@ -18,7 +23,7 @@ orders_data = get(f"/orders{'?status=' + status_filter if status_filter != 'all'
 
 if orders_data:
     df = pd.DataFrame(orders_data)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(df, width="stretch", hide_index=True)
 
     for _, row in df.iterrows():
         if row["status"] == "pending":
