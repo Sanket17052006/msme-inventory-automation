@@ -43,6 +43,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     command: python stock_monitor.py
+    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+asyncpg://msme:msme@db:5432/msme
       TELEGRAM_TOKEN: ${TELEGRAM_TOKEN:-}

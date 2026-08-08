@@ -13,8 +13,6 @@ from backend.services.supplier_service import SupplierService
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-PENDING_ALERTS: dict[str, int] = {}
-
 _application: Application | None = None
 
 
@@ -31,13 +29,17 @@ async def try_next_supplier(db, order: Order) -> str:
     order.status = "pending"
     await db.commit()
     await db.refresh(order)
-    sent = await send_alert(
-        order.id,
-        product.name if product else "?",
-        order.qty,
-        fallback.name,
-        chat_id=fallback.telegram_id,
-    )
+    try:
+        sent = await send_alert(
+            order.id,
+            product.name if product else "?",
+            order.qty,
+            fallback.name,
+            chat_id=fallback.telegram_id,
+        )
+    except Exception as e:
+        logger.error(f"Order #{order.id}: alert to {fallback.name} failed: {e}")
+        return f"Order #{order.id}: original supplier rejected — {fallback.name} is next."
     if sent:
         return (
             f"Order #{order.id}: original supplier rejected — "
