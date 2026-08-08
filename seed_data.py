@@ -1,4 +1,5 @@
 import asyncio
+import os
 import random
 from datetime import date, timedelta
 
@@ -20,10 +21,12 @@ PRODUCTS = [
     {"name": "Ceramic Tile", "sku": "CT-010", "reorder_point": 12, "avg_daily_sales": 6, "price": 150},
 ]
 
+DEMO_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+
 SUPPLIERS = [
-    {"name": "Prime Traders", "telegram_id": "@prime_trader", "lead_days": 3, "price_per_unit": 1.0, "is_fallback": False},
-    {"name": "Metro Supplies", "telegram_id": "@metro_supply", "lead_days": 5, "price_per_unit": 1.1, "is_fallback": True},
-    {"name": "City Wholesale", "telegram_id": "@city_wholesale", "lead_days": 2, "price_per_unit": 1.2, "is_fallback": True},
+    {"name": "Prime Traders", "telegram_id": DEMO_CHAT_ID, "lead_days": 3, "price_per_unit": 1.0, "is_fallback": False},
+    {"name": "Metro Supplies", "telegram_id": DEMO_CHAT_ID, "lead_days": 5, "price_per_unit": 1.1, "is_fallback": True},
+    {"name": "City Wholesale", "telegram_id": DEMO_CHAT_ID, "lead_days": 2, "price_per_unit": 1.2, "is_fallback": True},
 ]
 
 

@@ -3,7 +3,6 @@ import logging
 import time
 
 from sqlalchemy import exists, select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from backend.database import async_session
@@ -18,18 +17,21 @@ logger = logging.getLogger(__name__)
 
 ALERT_TIMEOUT_SECONDS = 180
 _alert_sent_at: dict[int, float] = {}
+_tried_suppliers: dict[int, set[int]] = {}
 
 
 def calc_order_qty(product: Product) -> int:
     safety_factor = 1.5
-    qty = int(product.avg_daily_sales * 3 * safety_factor - product.stock)
+    lead_days = product.supplier.lead_days if product.supplier else 3
+    qty = int(product.avg_daily_sales * lead_days * safety_factor - product.stock)
     return max(qty, 1)
 
 
 async def check_and_alert():
     has_pending_order = exists(
         select(Order.id).where(
-            Order.product_id == Product.id, Order.status == "pending"
+            Order.product_id == Product.id,
+            Order.status.in_(["pending", "confirmed"]),
         )
     )
 
@@ -58,15 +60,22 @@ async def check_and_alert():
 
             supplier = product.supplier
             supplier_name = supplier.name if supplier else "unknown supplier"
-            sent = await telegram_bot.send_alert(
-                order.id,
-                product.name,
-                qty,
-                supplier_name,
-                chat_id=supplier.telegram_id if supplier else None,
-            )
+            try:
+                sent = await telegram_bot.send_alert(
+                    order.id,
+                    product.name,
+                    qty,
+                    supplier_name,
+                    chat_id=supplier.telegram_id if supplier else None,
+                )
+            except Exception as e:
+                logger.error(
+                    f"Order #{order.id}: alert to {supplier_name} failed: {e}"
+                )
+                sent = False
             if sent:
                 _alert_sent_at[order.id] = time.monotonic()
+                _tried_suppliers.setdefault(order.id, set()).add(order.supplier_id)
 
         await db.commit()
 
@@ -83,33 +92,44 @@ async def check_timeouts():
         for order_id in list(_alert_sent_at):
             if all(o.id != order_id for o in pending):
                 del _alert_sent_at[order_id]
+                _tried_suppliers.pop(order_id, None)
 
         for order in pending:
             sent_at = _alert_sent_at.get(order.id)
             if sent_at is None or now - sent_at < ALERT_TIMEOUT_SECONDS:
                 continue
 
+            tried = _tried_suppliers.get(order.id, {order.supplier_id})
             fallback = await SupplierService(db).find_fallback(order.supplier_id)
-            if fallback is None:
+            if fallback is None or fallback.id in tried:
                 logger.warning(
                     f"Order #{order.id}: no response in {ALERT_TIMEOUT_SECONDS}s "
-                    "and no fallback supplier available"
+                    "and no untried fallback supplier available — marking rejected"
                 )
+                order.status = "rejected"
+                await db.commit()
                 continue
 
             product = await db.get(Product, order.product_id)
             order.supplier_id = fallback.id
             await db.commit()
             await db.refresh(order)
-            sent = await telegram_bot.send_alert(
-                order.id,
-                product.name if product else "?",
-                order.qty,
-                fallback.name,
-                chat_id=fallback.telegram_id,
-            )
+            try:
+                sent = await telegram_bot.send_alert(
+                    order.id,
+                    product.name if product else "?",
+                    order.qty,
+                    fallback.name,
+                    chat_id=fallback.telegram_id,
+                )
+            except Exception as e:
+                logger.error(
+                    f"Order #{order.id}: alert to {fallback.name} failed: {e}"
+                )
+                sent = False
             if sent:
                 _alert_sent_at[order.id] = now
+                _tried_suppliers.setdefault(order.id, set()).add(fallback.id)
             logger.info(
                 f"Order #{order.id}: no response in {ALERT_TIMEOUT_SECONDS}s — "
                 f"trying {fallback.name}"
